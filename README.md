@@ -1,2 +1,4 @@
 # EasyJSON
-A java based JSON Reader
+A java based JSON Reader that is designed to be easy and quick to use.
+
+This package is a part of the [ZDoctor's Commons on GitHub](https://github.com/Z-Doctor/ZDoctorsCommons) for those that have need of this certain aspect.
