@@ -2,81 +2,78 @@ package zdoctor.commons.json;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.function.BiConsumer;
 
 import zdoctor.commons.json.JSonValue.ValueType;
 
-public class JSonObject {
-	HashMap<String, JSonValue<?>> jsonValues = new HashMap<>();
-	private String input;
+public class JSonObject extends HashMap<String, JSonValue<?>> {
+	private static final long serialVersionUID = 2295324745842639921L;
 
-	@Override
-	public String toString() {
-		return jsonValues.toString();
-	}
+	private String input;
 
 	public String getInput() {
 		return input;
 	}
 
-	public HashMap<String, JSonValue<?>> getJsonValues() {
-		return new HashMap<>(jsonValues);
-	}
-
-	public JSonValue<?> get(String key) {
-		return getJsonValues().get(key);
-	}
-
 	public long getNumber(String key) {
-		return getJsonValues().get(key).getNumber();
+		return get(key).getNumber();
 	}
 
 	public double getDecimal(String key) {
-		return getJsonValues().get(key).getDecimal();
+		return get(key).getDecimal();
 	}
 
 	public String getString(String key) {
-		return getJsonValues().get(key).getString();
+		return get(key).getString();
 	}
 
 	public boolean getBoolean(String key) {
-		return getJsonValues().get(key).getBoolean();
+		return get(key).getBoolean();
 	}
 
 	public JSonObject getObject(String key) {
-		return getJsonValues().get(key).getObject();
+		return get(key).getObject();
 	}
 
 	public JSonArray getArray(String key) {
-		return getJsonValues().get(key).getArray();
+		return get(key).getArray();
 	}
 
-	public void forEach(BiConsumer<String, JSonValue<?>> action) {
-		getJsonValues().forEach(action);
-	}
-
-	protected JSonObject parseJson(String input) throws IOException {
+	protected JSonObject parseJsonObject(String input) throws IOException {
 		input = input.trim();
 		this.input = input;
 
 		char[] charArray = input.toCharArray();
-		int start = -1;
 		for (int i = 0; i < charArray.length; i++) {
 			char c = charArray[i];
 			if (c == '{') {
-				start = i;
+				parseObject(input, i, this);
 				break;
+			} else if (c == '[') {
+				throw new IOException("This is a JSonArray. Did you mean parseJsonArray?");
 			}
 		}
 
-		if (start == -1) {
-			System.out.println("Could not find start of object");
-			return null;
+		return this;
+	}
+
+	protected JSonArray parseJsonArray(String input) throws IOException {
+		input = input.trim();
+		this.input = input;
+
+		char[] charArray = input.toCharArray();
+		for (int i = 0; i < charArray.length; i++) {
+			char c = charArray[i];
+			if (c == '{') {
+				throw new IOException("This is a JSonObject. Did you mean parseJsonObject?");
+			} else if (c == '[') {
+				JSonArray temp = new JSonArray();
+				parseArray(input, i, this, temp, true);
+				return temp;
+			}
 		}
 
-		parseObject(input, start, this);
+		return new JSonArray();
 
-		return this;
 	}
 
 	protected static int nextChar(String input, int start) {
@@ -115,7 +112,7 @@ public class JSonObject {
 				}
 			} else if (c == '[') {
 				JSonArray temp = new JSonArray();
-				i = parseArray(input, i, json, temp);
+				i = parseArray(input, i, json, temp, false);
 				addValue(json, key, new JSonValue<JSonArray>(ValueType.ARRAY, temp));
 				key = "";
 			} else if (Character.isDigit(c)) {
@@ -163,26 +160,30 @@ public class JSonObject {
 				e.printStackTrace();
 			}
 		else
-			json.jsonValues.put(key, jSonValue);
+			json.put(key, jSonValue);
 	}
 
-	protected static int parseArray(String input, int start, JSonObject json, JSonArray jsonArray) throws IOException {
+	protected static int parseArray(String input, int start, JSonObject json, JSonArray jsonArray, boolean inArray)
+			throws IOException {
 		char[] charArray = input.toCharArray();
 		String key = "";
 		for (int i = start; i < charArray.length; i++) {
 			char c = charArray[i];
 			if (c == '[' && i != start) {
 				JSonArray temp = new JSonArray();
-				i = parseArray(input, i, json, temp);
-				addValue(json, key, new JSonValue<JSonArray>(ValueType.ARRAY, temp));
-				key = "";
+				i = parseArray(input, i, json, temp, true);
+				if (inArray)
+					jsonArray.add(new JSonValue<JSonArray>(ValueType.ARRAY, temp));
+				else {
+					addValue(json, key, new JSonValue<JSonArray>(ValueType.ARRAY, temp));
+					key = "";
+				}
 			} else if (c == '"') {
 				String s = parseString(input, i);
 				i += s.length() + 1;
 				int j = nextChar(input, i);
 				if (charArray[j] == ':') {
 					key = s;
-					System.out.println("New Key: " + key);
 				} else {
 					jsonArray.add(new JSonValue<String>(ValueType.STRING, s));
 					key = "";
