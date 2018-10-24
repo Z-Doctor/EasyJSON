@@ -19,9 +19,7 @@ public class JSonReader {
 	}
 
 	public JSonReader(String input) throws IOException {
-		input = input.trim();
-		validate(input);
-		this.input = input;
+		this(new File(input));
 	}
 
 	public JSonObject readObject() {
