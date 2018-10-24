@@ -7,6 +7,13 @@ import java.io.IOException;
 public class JSonReader {
 	private JSonObject json = new JSonObject();
 	private String input;
+	
+	JSonReader() {
+  }
+	
+	public JSonReader(String input) throws IOException {
+	  this(new File(input));
+	}
 
 	public JSonReader(File inputFile) throws IOException {
 		FileReader fr = new FileReader(inputFile);
@@ -18,10 +25,15 @@ public class JSonReader {
 		this.input = input;
 	}
 
-	public JSonReader(String input) throws IOException {
-		this(new File(input));
+	public static JSonReader fromString(String input) throws IOException {
+	  JSonReader jR = new JSonReader();
+	  input = input.trim();
+	  jR.validate(input);  
+	  jR.input = input;
+	  
+	  return jR;
 	}
-
+	
 	public JSonObject readObject() {
 		try {
 			return json.parseJsonObject(input);
